@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>WebFlow Manager — Gestión de Proyectos Web</title>
+<style>
+  :root{
+    --bg:#0b0d12; --bg-2:#11141b; --panel:#161a23; --panel-2:#1c2130;
+    --border:#262b3a; --border-2:#323849;
+    --text:#e6e8ef; --muted:#8a92a6;
+    --primary:#6366f1; --primary-2:#818cf8; --accent:#22d3ee;
+    --success:#22c55e; --warning:#f59e0b; --danger:#ef4444;
+    --shadow:0 10px 30px rgba(0,0,0,.35); --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:radial-gradient(1200px 600px at 10% -10%, rgba(99,102,241,.15), transparent 60%),
+               radial-gradient(900px 500px at 110% 10%, rgba(34,211,238,.10), transparent 60%),
+               var(--bg);
+    color:var(--text); min-height:100vh; overflow-x:hidden;
+  }
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,textarea,select{font-family:inherit;color:var(--text)}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2a3042;border-radius:10px}
+  ::-webkit-scrollbar-track{background:transparent}
+
+  .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+  .sidebar{
+    background:linear-gradient(180deg,var(--bg-2),#0d1017);
+    border-right:1px solid var(--border); padding:22px 16px;
+    position:sticky;top:0;height:100vh; display:flex;flex-direction:column;gap:6px;
+  }
+  .logo{display:flex;align-items:center;gap:10px;padding:6px 8px 18px;border-bottom:1px solid var(--border);margin-bottom:14px}
+  .logo-mark{
+    width:36px;height:36px;border-radius:10px;
+    background:linear-gradient(135deg,var(--primary),var(--accent));
+    display:grid;place-items:center;font-weight:800;color:white;
+    box-shadow:0 6px 20px rgba(99,102,241,.45);
+  }
+  .logo h1{font-size:16px}
+  .logo small{color:var(--muted);font-size:11px}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;
+    color:var(--muted);font-size:14px;transition:all .2s ease;
+  }
+  .nav-item:hover{background:var(--panel);color:var(--text)}
+  .nav-item.active{background:linear-gradient(135deg,rgba(99,102,241,.18),rgba(34,211,238,.10));color:var(--text);box-shadow:inset 0 0 0 1px var(--border-2)}
+  .nav-item svg{width:18px;height:18px}
+  .sidebar-foot{margin-top:auto;font-size:11px;color:var(--muted);padding:10px;border-top:1px solid var(--border)}
+  .cloud-status{display:flex;align-items:center;gap:6px;margin-top:6px}
+  .cloud-dot{width:8px;height:8px;border-radius:50%;background:#666}
+  .cloud-dot.on{background:var(--success);box-shadow:0 0 8px var(--success)}
+  .cloud-dot.off{background:var(--warning)}
+
+  .main{display:flex;flex-direction:column;min-width:0}
+  .topbar{
+    position:sticky;top:0;z-index:30;
+    display:flex;align-items:center;gap:14px;padding:14px 22px;
+    background:rgba(11,13,18,.7);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  .menu-btn{display:none}
+  .search{
+    flex:1;max-width:520px;display:flex;align-items:center;gap:8px;
+    background:var(--panel);border:1px solid var(--border);
+    padding:10px 12px;border-radius:10px;
+  }
+  .search input{flex:1;background:transparent;border:none;outline:none;font-size:14px}
+  .top-actions{display:flex;align-items:center;gap:10px;margin-left:auto}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:10px 14px;border-radius:10px;font-weight:600;font-size:13px;
+    transition:all .2s ease;
+  }
+  .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:white;box-shadow:0 8px 20px rgba(99,102,241,.35)}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(99,102,241,.5)}
+  .btn-ghost{background:var(--panel);border:1px solid var(--border);color:var(--text)}
+  .btn-ghost:hover{background:var(--panel-2);border-color:var(--border-2)}
+  .btn-danger{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
+  .btn-danger:hover{background:rgba(239,68,68,.2)}
+
+  .content{padding:24px;animation:fadeIn .35s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+  .page-head{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+  .page-head h2{font-size:22px}
+  .page-head p{color:var(--muted);font-size:13px;margin-top:4px}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  .stat{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden;
+    transition:transform .2s ease,border-color .2s ease;
+  }
+  .stat:hover{transform:translateY(-2px);border-color:var(--border-2)}
+  .stat .label{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.6px}
+  .stat .value{font-size:24px;font-weight:700;margin-top:8px;word-break:break-all}
+  .stat .ico{
+    position:absolute;right:14px;top:14px;width:34px;height:34px;border-radius:10px;
+    display:grid;place-items:center;
+  }
+  .ico.indigo{background:rgba(99,102,241,.15);color:var(--primary-2)}
+  .ico.green{background:rgba(34,197,94,.15);color:#86efac}
+  .ico.amber{background:rgba(245,158,11,.15);color:#fcd34d}
+  .ico.cyan{background:rgba(34,211,238,.15);color:#67e8f9}
+
+  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .chip{
+    padding:8px 12px;border-radius:999px;font-size:12px;font-weight:600;
+    background:var(--panel);border:1px solid var(--border);color:var(--muted);
+    transition:all .2s ease;
+  }
+  .chip:hover{color:var(--text)}
+  .chip.active{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:white;border-color:transparent}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+  .card{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px;box-shadow:var(--shadow);
+    transition:all .25s ease;cursor:pointer;position:relative;overflow:hidden;
+  }
+  .card:hover{transform:translateY(-3px);border-color:var(--border-2);box-shadow:0 16px 40px rgba(0,0,0,.45)}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--primary),var(--accent));opacity:.7}
+  .card h3{font-size:15px;margin-bottom:4px}
+  .card .sub{color:var(--muted);font-size:12px;margin-bottom:12px}
+  .card-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-top:8px;gap:8px}
+  .card-row strong{color:var(--text);font-weight:600;text-align:right}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+  .b-active{background:rgba(99,102,241,.18);color:#a5b4fc}
+  .b-progress{background:rgba(34,211,238,.18);color:#67e8f9}
+  .b-review{background:rgba(245,158,11,.18);color:#fcd34d}
+  .b-done{background:rgba(34,197,94,.18);color:#86efac}
+  .b-paused{background:rgba(239,68,68,.15);color:#fca5a5}
+  .b-priority-alta{background:rgba(239,68,68,.15);color:#fca5a5}
+  .b-priority-media{background:rgba(245,158,11,.15);color:#fcd34d}
+  .b-priority-baja{background:rgba(34,197,94,.15);color:#86efac}
+
+  .progress{height:6px;background:#0e121b;border-radius:999px;overflow:hidden;margin-top:10px}
+  .progress > div{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:999px;transition:width .4s ease}
+
+  .empty{
+    text-align:center;padding:60px 20px;color:var(--muted);
+    border:1.5px dashed var(--border-2);border-radius:var(--radius);
+  }
+  .empty h3{color:var(--text);margin-bottom:6px}
+
+  /* Modal */
+  .modal-bg{
+    position:fixed;inset:0;background:rgba(5,7,12,.7);backdrop-filter:blur(6px);
+    display:none;align-items:center;justify-content:center;z-index:100;padding:18px;
+    animation:fadeIn .2s ease;
+  }
+  .modal-bg.show{display:flex}
+  .modal{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--border);border-radius:16px;
+    width:100%;max-width:560px;max-height:90vh;overflow:auto;
+    box-shadow:0 30px 80px rgba(0,0,0,.6);animation:popIn .25s ease;
+  }
+  .modal.lg{max-width:1100px}
+  @keyframes popIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border)}
+  .modal-head h3{font-size:17px}
+  .modal-body{padding:20px}
+  .modal-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+  .close{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
+  .close:hover{background:var(--panel);color:var(--text)}
+
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field.full{grid-column:1/-1}
+  .field label{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .field input,.field select,.field textarea{
+    background:var(--bg-2);border:1px solid var(--border);
+    padding:11px 12px;border-radius:10px;font-size:14px;outline:none;
+    transition:border-color .2s ease,box-shadow .2s ease;
+  }
+  .field textarea{resize:vertical;min-height:90px}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.18)}
+  .hint{font-size:11px;color:var(--muted)}
+
+  .detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  .detail-meta{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:6px}
+  .pay-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0 4px}
+  .pay-card{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:12px}
+  .pay-card .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .pay-card .val{font-size:16px;font-weight:700;margin-top:4px}
+  .pay-toggle{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+
+  .board{
+    display:grid;grid-template-columns:repeat(6,minmax(260px,1fr));gap:12px;
+    overflow-x:auto;padding-bottom:8px;
+  }
+  .col{
+    background:var(--bg-2);border:1px solid var(--border);border-radius:12px;
+    padding:12px;display:flex;flex-direction:column;gap:10px;min-height:200px;
+  }
+  .col-head{display:flex;align-items:center;justify-content:space-between}
+  .col-head h4{font-size:13px;display:flex;align-items:center;gap:8px}
+  .col-head .count{background:var(--panel);color:var(--muted);font-size:11px;padding:2px 8px;border-radius:999px}
+  .add-mini{font-size:12px;color:var(--primary-2);padding:4px 8px;border-radius:8px}
+  .add-mini:hover{background:rgba(99,102,241,.12)}
+
+  .item{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:10px;font-size:13px;display:flex;flex-direction:column;gap:6px;
+    transition:transform .15s ease,border-color .15s ease;
+  }
+  .item.openable{cursor:pointer}
+  .item.openable:hover{border-color:var(--primary);transform:translateY(-1px)}
+  .item .type{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .item .actions{display:flex;justify-content:flex-end;gap:6px;margin-top:4px}
+  .iconbtn{width:26px;height:26px;border-radius:6px;color:var(--muted);display:grid;place-items:center}
+  .iconbtn:hover{background:var(--panel-2);color:var(--text)}
+  .item img{max-width:100%;border-radius:8px;max-height:120px;object-fit:cover}
+  .item a{color:var(--accent);word-break:break-all;font-size:12px}
+  .item .file{display:flex;align-items:center;gap:8px;background:var(--bg-2);padding:8px;border-radius:8px}
+  .item .file a{color:var(--primary-2);font-weight:600;font-size:12px}
+  .item .preview{
+    background:var(--bg-2);border-radius:8px;padding:8px 10px;
+    font-size:12px;color:#c4c9d6;max-height:70px;overflow:hidden;
+    line-height:1.5;position:relative;white-space:pre-wrap;
+  }
+  .item .preview::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:24px;
+    background:linear-gradient(180deg,transparent,var(--bg-2));
+  }
+  .item .open-hint{font-size:11px;color:var(--primary-2);display:inline-flex;align-items:center;gap:4px}
+
+  .checklist{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .check{display:flex;align-items:center;gap:8px;font-size:13px;background:var(--bg-2);padding:8px 10px;border-radius:8px}
+  .check input{accent-color:var(--primary)}
+  .check.done span{text-decoration:line-through;color:var(--muted)}
+  .check button{margin-left:auto;color:var(--muted);font-size:14px}
+  .add-check{display:flex;gap:6px;margin-top:6px}
+  .add-check input{flex:1;background:var(--bg-2);border:1px solid var(--border);padding:8px;border-radius:8px;font-size:13px;outline:none}
+
+  .hist{font-size:12px;color:var(--muted);padding:8px 10px;background:var(--bg-2);border-radius:8px;border-left:3px solid var(--primary);margin-bottom:8px}
+  .hist b{color:var(--text)}
+
+  .toast{
+    position:fixed;bottom:20px;right:20px;z-index:200;
+    background:var(--panel);border:1px solid var(--border-2);
+    padding:12px 16px;border-radius:10px;font-size:13px;
+    box-shadow:var(--shadow);opacity:0;transform:translateY(10px);
+    transition:all .25s ease;pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateY(0)}
+  .toast.success{border-left:3px solid var(--success)}
+  .toast.error{border-left:3px solid var(--danger)}
+  .toast.info{border-left:3px solid var(--primary)}
+
+  .add-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .add-tabs button{padding:6px 10px;border-radius:8px;background:var(--bg-2);border:1px solid var(--border);font-size:12px;color:var(--muted)}
+  .add-tabs button.active{background:var(--primary);color:white;border-color:transparent}
+
+  /* WORD-LIKE DOCUMENT VIEWER */
+  .doc-modal{
+    position:fixed;inset:0;background:rgba(5,7,12,.92);backdrop-filter:blur(10px);
+    z-index:150;display:none;flex-direction:column;animation:fadeIn .25s ease;
+  }
+  .doc-modal.show{display:flex}
+  .doc-bar{
+    display:flex;align-items:center;gap:10px;padding:12px 20px;
+    background:var(--bg-2);border-bottom:1px solid var(--border);flex-wrap:wrap;
+  }
+  .doc-bar .crumbs{color:var(--muted);font-size:13px;flex:1;min-width:200px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .doc-bar .crumbs b{color:var(--text)}
+  .doc-scroll{flex:1;overflow:auto;padding:30px 20px;background:rgba(0,0,0,.2)}
+  .paper{
+    max-width:850px;margin:0 auto;background:#fdfdfb;color:#1f2330;
+    border-radius:4px;box-shadow:0 30px 100px rgba(0,0,0,.6);
+    min-height:calc(100vh - 200px);padding:80px 90px;
+    font-family:'Georgia','Times New Roman',serif;font-size:17px;line-height:1.75;
+  }
+  .paper h1{font-family:'Inter',system-ui,sans-serif;font-size:30px;margin-bottom:6px;color:#0f1115;letter-spacing:-.3px}
+  .paper .doc-meta{font-family:'Inter',sans-serif;font-size:11px;color:#6b7280;
+    border-bottom:1px solid #e5e7eb;padding-bottom:14px;margin-bottom:28px;text-transform:uppercase;letter-spacing:.8px}
+  .paper-edit{
+    width:100%;min-height:60vh;border:none;outline:none;background:transparent;
+    color:#1f2330;font-family:inherit;font-size:17px;line-height:1.75;resize:none;
+  }
+  .paper-view{white-space:pre-wrap;word-wrap:break-word}
+  .paper-view a{color:#2563eb;text-decoration:underline}
+  .paper img.big{max-width:100%;border-radius:6px;display:block;margin:14px auto;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+  @media (max-width: 768px){
+    .doc-scroll{padding:14px 6px}
+    .paper{padding:36px 24px;font-size:16px}
+    .paper h1{font-size:22px}
+  }
+
+  @media (max-width: 900px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .pay-grid{grid-template-columns:repeat(2,1fr)}
+    .form-grid{grid-template-columns:1fr}
+  }
+  @media (max-width: 768px){
+    .app{grid-template-columns:1fr}
+    .sidebar{position:fixed;left:-280px;top:0;width:260px;z-index:90;transition:left .25s ease}
+    .sidebar.open{left:0}
+    .menu-btn{display:grid;width:38px;height:38px;place-items:center;border-radius:10px;background:var(--panel);border:1px solid var(--border)}
+    .content{padding:16px}
+    .topbar{padding:12px 14px}
+  }
+  @media (max-width: 520px){
+    .stats{grid-template-columns:1fr 1fr}
+    .stat .value{font-size:18px}
+  }
+  .backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80}
+  .backdrop.show{display:block}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <div class="logo-mark">W</div>
+      <div>
+        <h1>WebFlow</h1>
+        <small>Manager Pro</small>
+      </div>
+    </div>
+    <button class="nav-item active" data-view="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item" data-view="projects">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+      Proyectos
+    </button>
+    <button class="nav-item" data-view="payments">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/></svg>
+      Pagos
+    </button>
+    <button class="nav-item" data-view="history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>
+      Historial
+    </button>
+    <div class="sidebar-foot">
+      <div class="cloud-status"><span class="cloud-dot" id="cloudDot"></span><span id="cloudText">Conectando...</span></div>
+      <div style="margin-top:6px">v1.1 · Firebase + Local</div>
+    </div>
+  </aside>
+  <div class="backdrop" id="backdrop"></div>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="menu-btn" id="menuBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+      <div class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="searchInput" placeholder="Buscar proyectos, clientes, empresas..." />
+      </div>
+      <div class="top-actions">
+        <button class="btn btn-primary" id="newProjectBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Nuevo Proyecto
+        </button>
+      </div>
+    </div>
+    <section class="content" id="content"></section>
+  </main>
+</div>
+
+<!-- Modal Proyecto -->
+<div class="modal-bg" id="projectModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="projectModalTitle">Nuevo Proyecto</h3>
+      <button class="close" data-close>&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="projectForm" class="form-grid" onsubmit="return false">
+        <input type="hidden" id="pId" />
+        <div class="field"><label>Cliente</label><input id="pClient" required placeholder="Juan Pérez" /></div>
+        <div class="field"><label>Empresa</label><input id="pCompany" placeholder="Empresa SpA" /></div>
+        <div class="field"><label>Tipo de Web</label>
+          <select id="pType">
+            <option>Landing Page</option><option>Sitio Corporativo</option>
+            <option>E-commerce</option><option>Portafolio</option>
+            <option>Blog</option><option>Aplicación Web</option><option>Otro</option>
+          </select>
+        </div>
+        <div class="field"><label>Precio Total (CLP)</label><input id="pPrice" type="number" min="0" step="1000" required placeholder="500000" /></div>
+        <div class="field"><label>Fecha Entrega</label><input id="pDate" type="date" /></div>
+        <div class="field"><label>Estado</label>
+          <select id="pStatus">
+            <option value="activo">Activo</option><option value="progreso">En Progreso</option>
+            <option value="revision">En Revisión</option><option value="pausado">Pausado</option>
+            <option value="terminado">Terminado</option>
+          </select>
+        </div>
+        <div class="field"><label>Prioridad</label>
+          <select id="pPriority">
+            <option value="baja">Baja</option><option value="media" selected>Media</option><option value="alta">Alta</option>
+          </select>
+        </div>
+        <div class="field full"><label>Notas</label><textarea id="pNotes" placeholder="Detalles del proyecto..."></textarea></div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>Cancelar</button>
+      <button class="btn btn-primary" id="saveProjectBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalle -->
+<div class="modal-bg" id="detailModal">
+  <div class="modal lg">
+    <div class="modal-head">
+      <h3 id="detailTitle">Proyecto</h3>
+      <button class="close" data-close>&times;</button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+  </div>
+</div>
+
+<!-- Modal Agregar Item -->
+<div class="modal-bg" id="itemModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="itemModalTitle">Agregar a etapa</h3>
+      <button class="close" data-close>&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="add-tabs" id="itemTabs">
+        <button data-t="text" class="active">📝 Texto / Documento</button>
+        <button data-t="note">⚡ Nota</button>
+        <button data-t="link">🔗 Link</button>
+        <button data-t="image">🖼️ Imagen</button>
+        <button data-t="file">📎 Archivo</button>
+      </div>
+      <div id="itemFields" style="margin-top:14px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>Cancelar</button>
+      <button class="btn btn-primary" id="saveItemBtn">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<!-- WORD-LIKE VIEWER -->
+<div class="doc-modal" id="docModal">
+  <div class="doc-bar">
+    <button class="btn btn-ghost" id="docBack">← Volver</button>
+    <div class="crumbs" id="docCrumbs"></div>
+    <button class="btn btn-ghost" id="docEdit">✏️ Editar</button>
+    <button class="btn btn-primary" id="docSave" style="display:none">💾 Guardar</button>
+    <button class="btn btn-danger" id="docDelete">🗑️ Eliminar</button>
+  </div>
+  <div class="doc-scroll">
+    <div class="paper" id="docPaper"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot }
+    from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC9zT3ojqI9fgFbb-sCLGHiDMkysdORI4Y",
+    authDomain: "poll-5759a.firebaseapp.com",
+    projectId: "poll-5759a",
+    storageBucket: "poll-5759a.firebasestorage.app",
+    messagingSenderId: "340843942755",
+    appId: "1:340843942755:web:29a28e8888b490e56e3956",
+    measurementId: "G-CEQ16NX7WH"
+  };
+
+  try{
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    window.FB = {
+      db,
+      projectsCol: collection(db, "webflow_projects"),
+      historyCol: collection(db, "webflow_history"),
+      saveProject: (p) => setDoc(doc(db,"webflow_projects",p.id), p),
+      deleteProject: (id) => deleteDoc(doc(db,"webflow_projects",id)),
+      saveHistory: (h) => setDoc(doc(db,"webflow_history",h.id), h),
+      onProjects: (cb) => onSnapshot(collection(db,"webflow_projects"), s=>{
+        cb(s.docs.map(d=>d.data()));
+      }),
+      onHistory: (cb) => onSnapshot(collection(db,"webflow_history"), s=>{
+        cb(s.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts).slice(0,100));
+      }),
+      ready:true
+    };
+    window.dispatchEvent(new Event('fb-ready'));
+  }catch(e){
+    console.error('Firebase init error',e);
+    window.FB = {ready:false, error:e.message};
+    window.dispatchEvent(new Event('fb-ready'));
+  }
+</script>
+
+<script>
+/* ============ STATE ============ */
+const STORAGE_KEY = 'webflow_manager_v1';
+const STAGES = [
+  {id:'info', name:'Información Inicial', icon:'📋'},
+  {id:'content', name:'Contenido Principal', icon:'📝'},
+  {id:'design', name:'Diseño', icon:'🎨'},
+  {id:'dev', name:'Desarrollo', icon:'💻'},
+  {id:'review', name:'Revisión', icon:'🔍'},
+  {id:'delivery', name:'Entrega Final', icon:'🚀'},
+];
+
+let state = loadLocal() || { projects: [], history: [] };
+let currentView = 'dashboard';
+let filter = 'todos';
+let search = '';
+let currentDetailId = null;
+let currentStageId = null;
+let currentItemType = 'text';
+let editingItemId = null;
+let cloudOn = false;
+let suppressCloudWrite = false;
+
+function loadLocal(){ try{return JSON.parse(localStorage.getItem(STORAGE_KEY))}catch{return null} }
+function saveLocal(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+
+function setCloud(on, msg){
+  cloudOn = on;
+  document.getElementById('cloudDot').className = 'cloud-dot ' + (on?'on':'off');
+  document.getElementById('cloudText').textContent = msg || (on?'Firebase conectado':'Sin conexión (local)');
+}
+
+/* ============ CLOUD SYNC ============ */
+window.addEventListener('fb-ready', ()=>{
+  if(!window.FB.ready){ setCloud(false,'Error Firebase'); return; }
+  setCloud(true);
+  // Listen for remote changes
+  window.FB.onProjects(list=>{
+    if(suppressCloudWrite) return;
+    if(list.length){
+      state.projects = list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      saveLocal(); render();
+    } else if(state.projects.length){
+      // First sync: upload local data
+      state.projects.forEach(p=>window.FB.saveProject(p));
+    }
+  });
+  window.FB.onHistory(list=>{
+    if(list.length){ state.history = list; saveLocal(); if(currentView==='history') render(); }
+  });
+});
+
+function cloudSaveProject(p){
+  if(cloudOn) window.FB.saveProject(JSON.parse(JSON.stringify(p))).catch(e=>console.warn('cloud save',e));
+}
+function cloudDeleteProject(id){
+  if(cloudOn) window.FB.deleteProject(id).catch(e=>console.warn('cloud del',e));
+}
+function logHist(text){
+  const h = {id:uid(), text, ts:Date.now()};
+  state.history.unshift(h);
+  state.history = state.history.slice(0,100);
+  saveLocal();
+  if(cloudOn) window.FB.saveHistory(h).catch(()=>{});
+}
+function persistProject(p){ saveLocal(); cloudSaveProject(p); }
+
+/* ============ TOAST ============ */
+const toastEl = document.getElementById('toast');
+function toast(msg, type='success'){
+  toastEl.textContent = msg;
+  toastEl.className = 'toast show ' + type;
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>toastEl.classList.remove('show'), 2200);
+}
+
+/* ============ HELPERS ============ */
+const fmt = n => '$' + Number(n||0).toLocaleString('es-CL',{maximumFractionDigits:0}) + ' CLP';
+const escapeHtml = s => String(s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function projectProgress(p){
+  const total = STAGES.length;
+  let filled = 0;
+  STAGES.forEach(s=>{ if((p.stages?.[s.id]?.items||[]).length) filled += 1; });
+  const checks = p.checklist||[];
+  const cp = checks.length ? checks.filter(c=>c.done).length/checks.length : 0;
+  return Math.round(((filled/total)*0.7 + cp*0.3)*100);
+}
+function statusBadge(s){
+  const map={activo:'b-active',progreso:'b-progress',revision:'b-review',pausado:'b-paused',terminado:'b-done'};
+  const label={activo:'Activo',progreso:'En Progreso',revision:'En Revisión',pausado:'Pausado',terminado:'Terminado'};
+  return `<span class="badge ${map[s]||'b-active'}">${label[s]||s}</span>`;
+}
+function fmtDate(ts){ return new Date(ts).toLocaleString('es-CL'); }
+
+/* ============ NAV ============ */
+document.querySelectorAll('.nav-item').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    currentView = b.dataset.view;
+    render();
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('backdrop').classList.remove('show');
+  });
+});
+document.getElementById('menuBtn').addEventListener('click', ()=>{
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('backdrop').classList.toggle('show');
+});
+document.getElementById('backdrop').addEventListener('click', ()=>{
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('backdrop').classList.remove('show');
+});
+document.getElementById('searchInput').addEventListener('input', e=>{
+  search = e.target.value.toLowerCase();
+  if(currentView==='dashboard'||currentView==='projects') render();
+});
+
+/* ============ MODALS ============ */
+document.querySelectorAll('[data-close]').forEach(b=>{
+  b.addEventListener('click', ()=>b.closest('.modal-bg,.doc-modal').classList.remove('show'));
+});
+document.querySelectorAll('.modal-bg').forEach(m=>{
+  m.addEventListener('click', e=>{ if(e.target===m) m.classList.remove('show'); });
+});
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+/* ============ PROJECT FORM ============ */
+document.getElementById('newProjectBtn').addEventListener('click', ()=>openProjectModal());
+function openProjectModal(p=null){
+  document.getElementById('projectModalTitle').textContent = p ? 'Editar Proyecto' : 'Nuevo Proyecto';
+  document.getElementById('pId').value = p?.id || '';
+  document.getElementById('pClient').value = p?.client || '';
+  document.getElementById('pCompany').value = p?.company || '';
+  document.getElementById('pType').value = p?.type || 'Landing Page';
+  document.getElementById('pPrice').value = p?.price || '';
+  document.getElementById('pDate').value = p?.dueDate || '';
+  document.getElementById('pStatus').value = p?.status || 'activo';
+  document.getElementById('pPriority').value = p?.priority || 'media';
+  document.getElementById('pNotes').value = p?.notes || '';
+  openModal('projectModal');
+}
+document.getElementById('saveProjectBtn').addEventListener('click', ()=>{
+  const id = document.getElementById('pId').value;
+  const client = document.getElementById('pClient').value.trim();
+  const price = parseFloat(document.getElementById('pPrice').value)||0;
+  if(!client){ toast('Ingresa el nombre del cliente','error'); return; }
+  if(price<=0){ toast('Ingresa un precio válido','error'); return; }
+  const data = {
+    client,
+    company: document.getElementById('pCompany').value.trim(),
+    type: document.getElementById('pType').value,
+    price,
+    dueDate: document.getElementById('pDate').value,
+    status: document.getElementById('pStatus').value,
+    priority: document.getElementById('pPriority').value,
+    notes: document.getElementById('pNotes').value.trim(),
+  };
+  let p;
+  if(id){
+    p = state.projects.find(x=>x.id===id);
+    Object.assign(p, data);
+    logHist(`Editado proyecto: <b>${escapeHtml(client)}</b>`);
+    toast('Proyecto actualizado');
+  } else {
+    const stages = {};
+    STAGES.forEach(s=>stages[s.id]={items:[]});
+    p = { id: uid(), ...data, createdAt: Date.now(), paidInitial:false, paidFinal:false, stages, checklist:[] };
+    state.projects.unshift(p);
+    logHist(`Creado proyecto: <b>${escapeHtml(client)}</b> (${fmt(price)})`);
+    toast('Proyecto creado');
+  }
+  persistProject(p);
+  closeModal('projectModal');
+  render();
+});
+
+/* ============ RENDER ============ */
+const content = document.getElementById('content');
+function render(){
+  if(currentView==='dashboard') renderDashboard();
+  else if(currentView==='projects') renderProjects();
+  else if(currentView==='payments') renderPayments();
+  else if(currentView==='history') renderHistory();
+}
+function getFiltered(){
+  let list = state.projects;
+  if(filter!=='todos'){
+    if(filter==='activos') list = list.filter(p=>p.status!=='terminado');
+    else if(filter==='terminados') list = list.filter(p=>p.status==='terminado');
+    else list = list.filter(p=>p.status===filter);
+  }
+  if(search){
+    list = list.filter(p =>
+      (p.client||'').toLowerCase().includes(search) ||
+      (p.company||'').toLowerCase().includes(search) ||
+      (p.type||'').toLowerCase().includes(search)
+    );
+  }
+  return list;
+}
+
+function renderDashboard(){
+  const ps = state.projects;
+  const active = ps.filter(p=>p.status!=='terminado').length;
+  const done = ps.filter(p=>p.status==='terminado').length;
+  let pendingMoney = 0, earned = 0;
+  ps.forEach(p=>{
+    const half = p.price/2;
+    if(p.paidInitial) earned += half; else pendingMoney += half;
+    if(p.paidFinal) earned += half; else pendingMoney += half;
+  });
+  content.innerHTML = `
+    <div class="page-head"><div><h2>Dashboard</h2><p>Resumen general de tus proyectos web</p></div></div>
+    <div class="stats">
+      <div class="stat"><div class="ico indigo">📁</div><div class="label">Proyectos Activos</div><div class="value">${active}</div></div>
+      <div class="stat"><div class="ico green">✅</div><div class="label">Terminados</div><div class="value">${done}</div></div>
+      <div class="stat"><div class="ico amber">⏳</div><div class="label">Pagos Pendientes</div><div class="value">${fmt(pendingMoney)}</div></div>
+      <div class="stat"><div class="ico cyan">💰</div><div class="label">Total Ganado</div><div class="value">${fmt(earned)}</div></div>
+    </div>
+    <div class="page-head"><div><h2 style="font-size:18px">Proyectos recientes</h2></div></div>
+    ${renderProjectGrid(ps.slice(0,6))}
+  `;
+  attachCardEvents();
+}
+
+function renderProjects(){
+  const list = getFiltered();
+  content.innerHTML = `
+    <div class="page-head"><div><h2>Proyectos</h2><p>${list.length} ${list.length===1?'proyecto':'proyectos'}</p></div></div>
+    <div class="filters">
+      ${['todos','activos','progreso','revision','pausado','terminados'].map(f=>
+        `<button class="chip ${filter===f?'active':''}" data-f="${f}">${({todos:'Todos',activos:'Activos',progreso:'En Progreso',revision:'En Revisión',pausado:'Pausados',terminados:'Terminados'})[f]}</button>`
+      ).join('')}
+    </div>
+    ${renderProjectGrid(list)}
+  `;
+  document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{ filter=c.dataset.f; renderProjects(); }));
+  attachCardEvents();
+}
+
+function renderProjectGrid(list){
+  if(!list.length) return `<div class="empty"><h3>No hay proyectos</h3><p>Crea tu primer proyecto desde el botón superior.</p></div>`;
+  return `<div class="grid">${list.map(p=>{
+    const prog = projectProgress(p);
+    const half = p.price/2;
+    const paid = (p.paidInitial?half:0)+(p.paidFinal?half:0);
+    return `
+      <div class="card" data-id="${p.id}">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
+          <div style="min-width:0">
+            <h3>${escapeHtml(p.client)}</h3>
+            <div class="sub">${escapeHtml(p.company||'—')} · ${escapeHtml(p.type)}</div>
+          </div>
+          ${statusBadge(p.status)}
+        </div>
+        <div class="card-row"><span>Precio</span><strong>${fmt(p.price)}</strong></div>
+        <div class="card-row"><span>Pagado</span><strong style="color:${paid===p.price?'#86efac':paid?'#fcd34d':'#fca5a5'}">${fmt(paid)}</strong></div>
+        <div class="card-row"><span>Entrega</span><strong>${p.dueDate||'—'}</strong></div>
+        <div class="card-row" style="margin-top:8px">
+          <span class="badge b-priority-${p.priority||'media'}">Prioridad ${p.priority||'media'}</span>
+          <span style="font-size:11px">${prog}%</span>
+        </div>
+        <div class="progress"><div style="width:${prog}%"></div></div>
+      </div>`;
+  }).join('')}</div>`;
+}
+function attachCardEvents(){
+  document.querySelectorAll('.card[data-id]').forEach(c=>c.addEventListener('click',()=>openDetail(c.dataset.id)));
+}
+
+function renderPayments(){
+  const ps = state.projects;
+  let earned=0, pendingI=0, pendingF=0;
+  ps.forEach(p=>{
+    const half=p.price/2;
+    if(p.paidInitial)earned+=half; else pendingI+=half;
+    if(p.paidFinal)earned+=half; else pendingF+=half;
+  });
+  content.innerHTML = `
+    <div class="page-head"><div><h2>Pagos</h2><p>Control financiero en CLP</p></div></div>
+    <div class="stats">
+      <div class="stat"><div class="ico green">💵</div><div class="label">Total Ganado</div><div class="value">${fmt(earned)}</div></div>
+      <div class="stat"><div class="ico amber">⏳</div><div class="label">Pendiente Inicial</div><div class="value">${fmt(pendingI)}</div></div>
+      <div class="stat"><div class="ico amber">⏳</div><div class="label">Pendiente Final</div><div class="value">${fmt(pendingF)}</div></div>
+      <div class="stat"><div class="ico indigo">📊</div><div class="label">Total Cartera</div><div class="value">${fmt(earned+pendingI+pendingF)}</div></div>
+    </div>
+    <div class="page-head"><div><h2 style="font-size:18px">Detalle por proyecto</h2></div></div>
+    <div class="grid">
+      ${ps.length ? ps.map(p=>{
+        const half=p.price/2;
+        const paid=(p.paidInitial?half:0)+(p.paidFinal?half:0);
+        const fullPaid = paid===p.price;
+        return `<div class="card" data-id="${p.id}">
+          <h3>${escapeHtml(p.client)}</h3>
+          <div class="sub">${escapeHtml(p.company||'—')}</div>
+          <div class="pay-grid" style="grid-template-columns:1fr 1fr">
+            <div class="pay-card"><div class="lbl">Inicial 50%</div><div class="val">${fmt(half)}</div>
+              <div style="margin-top:6px"><span class="badge ${p.paidInitial?'b-done':'b-paused'}">${p.paidInitial?'Pagado':'Pendiente'}</span></div></div>
+            <div class="pay-card"><div class="lbl">Final 50%</div><div class="val">${fmt(half)}</div>
+              <div style="margin-top:6px"><span class="badge ${p.paidFinal?'b-done':'b-paused'}">${p.paidFinal?'Pagado':'Pendiente'}</span></div></div>
+          </div>
+          <div class="card-row" style="margin-top:10px"><span>Estado pago</span>
+            <span class="badge ${fullPaid?'b-done':paid?'b-review':'b-paused'}">${fullPaid?'Completo':paid?'Parcial':'Sin pagar'}</span>
+          </div>
+        </div>`;
+      }).join('') : `<div class="empty"><h3>Aún no hay pagos</h3></div>`}
+    </div>
+  `;
+  attachCardEvents();
+}
+
+function renderHistory(){
+  content.innerHTML = `
+    <div class="page-head"><div><h2>Historial</h2><p>Últimas actividades</p></div></div>
+    <div class="card" style="cursor:default">
+      ${state.history.length ? state.history.map(h=>`
+        <div class="hist">${h.text} <span style="float:right">${fmtDate(h.ts)}</span></div>
+      `).join('') : `<div style="color:var(--muted);text-align:center;padding:20px">Sin actividad aún</div>`}
+    </div>
+  `;
+}
+
+/* ============ DETAIL ============ */
+function openDetail(id){
+  currentDetailId = id;
+  renderDetail();
+  openModal('detailModal');
+}
+function renderDetail(){
+  const p = state.projects.find(x=>x.id===currentDetailId);
+  if(!p) return;
+  STAGES.forEach(s=>{ (p.stages?.[s.id]?.items||[]).forEach(it=>it._stage=s.id); });
+  document.getElementById('detailTitle').textContent = p.client + (p.company?' · '+p.company:'');
+  const half = p.price/2;
+  const paid = (p.paidInitial?half:0)+(p.paidFinal?half:0);
+  const prog = projectProgress(p);
+
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-head">
+      <div>
+        <div class="detail-meta">
+          ${statusBadge(p.status)}
+          <span class="badge b-priority-${p.priority||'media'}">Prioridad ${p.priority||'media'}</span>
+          <span>📅 Entrega: ${p.dueDate||'sin fecha'}</span>
+          <span>🌐 ${escapeHtml(p.type)}</span>
+        </div>
+        ${p.notes?`<p style="margin-top:10px;color:var(--muted);font-size:13px">${escapeHtml(p.notes)}</p>`:''}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" id="editProj">✏️ Editar</button>
+        <button class="btn btn-danger" id="delProj">🗑️ Eliminar</button>
+      </div>
+    </div>
+    <div class="progress"><div style="width:${prog}%"></div></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">Progreso general: ${prog}%</div>
+
+    <div class="pay-grid">
+      <div class="pay-card"><div class="lbl">Precio Total</div><div class="val">${fmt(p.price)}</div></div>
+      <div class="pay-card"><div class="lbl">Pago Inicial 50%</div><div class="val">${fmt(half)}</div>
+        <div class="pay-toggle"><button class="btn ${p.paidInitial?'btn-primary':'btn-ghost'}" id="togInit">${p.paidInitial?'✓ Pagado':'Marcar pagado'}</button></div></div>
+      <div class="pay-card"><div class="lbl">Pago Final 50%</div><div class="val">${fmt(half)}</div>
+        <div class="pay-toggle"><button class="btn ${p.paidFinal?'btn-primary':'btn-ghost'}" id="togFinal">${p.paidFinal?'✓ Pagado':'Marcar pagado'}</button></div></div>
+      <div class="pay-card"><div class="lbl">Recibido</div><div class="val" style="color:${paid===p.price?'#86efac':paid?'#fcd34d':'#fca5a5'}">${fmt(paid)}</div>
+        <div style="margin-top:6px"><span class="badge ${paid===p.price?'b-done':paid?'b-review':'b-paused'}">${paid===p.price?'Completo':paid?'Parcial':'Pendiente'}</span></div></div>
+    </div>
+
+    <div style="margin:18px 0 8px"><h4 style="font-size:14px">Etapas del Proyecto</h4>
+      <p style="font-size:12px;color:var(--muted);margin-top:4px">Click en cualquier texto o nota para abrirlo a pantalla completa estilo Word.</p>
+    </div>
+    <div class="board">
+      ${STAGES.map(s=>{
+        const items = (p.stages?.[s.id]?.items)||[];
+        return `<div class="col">
+          <div class="col-head">
+            <h4>${s.icon} ${s.name} <span class="count">${items.length}</span></h4>
+            <button class="add-mini" data-stage="${s.id}">+ Agregar</button>
+          </div>
+          ${items.map(it=>renderItem(it)).join('') || `<div style="font-size:12px;color:var(--muted);text-align:center;padding:14px 0">Sin contenido</div>`}
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div style="margin:22px 0 8px"><h4 style="font-size:14px">✅ Checklist</h4></div>
+    <div class="checklist">
+      ${(p.checklist||[]).map(c=>`
+        <div class="check ${c.done?'done':''}">
+          <input type="checkbox" ${c.done?'checked':''} data-check="${c.id}"/>
+          <span>${escapeHtml(c.text)}</span>
+          <button data-delcheck="${c.id}">✕</button>
+        </div>
+      `).join('')}
+    </div>
+    <div class="add-check">
+      <input id="newCheck" placeholder="Nueva tarea..." />
+      <button class="btn btn-primary" id="addCheckBtn">Agregar</button>
+    </div>
+  `;
+
+  document.getElementById('editProj').onclick = ()=>openProjectModal(p);
+  document.getElementById('delProj').onclick = ()=>{
+    if(confirm('¿Eliminar este proyecto y todo su contenido?')){
+      state.projects = state.projects.filter(x=>x.id!==p.id);
+      saveLocal(); cloudDeleteProject(p.id);
+      logHist(`Eliminado proyecto: <b>${escapeHtml(p.client)}</b>`);
+      closeModal('detailModal'); render(); toast('Proyecto eliminado','info');
+    }
+  };
+  document.getElementById('togInit').onclick = ()=>{ p.paidInitial=!p.paidInitial; logHist(`Pago inicial ${p.paidInitial?'recibido':'revertido'} - <b>${escapeHtml(p.client)}</b>`); persistProject(p); renderDetail(); };
+  document.getElementById('togFinal').onclick = ()=>{ p.paidFinal=!p.paidFinal; logHist(`Pago final ${p.paidFinal?'recibido':'revertido'} - <b>${escapeHtml(p.client)}</b>`); persistProject(p); renderDetail(); };
+
+  document.querySelectorAll('[data-stage]').forEach(b=>{
+    b.onclick = (e)=>{ e.stopPropagation(); currentStageId=b.dataset.stage; editingItemId=null; openItemModal(); };
+  });
+  document.querySelectorAll('[data-open-doc]').forEach(b=>{
+    b.onclick = ()=>{
+      const [stage,itemId] = b.dataset.openDoc.split('|');
+      openDocViewer(stage,itemId);
+    };
+  });
+  document.querySelectorAll('[data-edit-item]').forEach(b=>{
+    b.onclick = (e)=>{
+      e.stopPropagation();
+      const [stage,itemId] = b.dataset.editItem.split('|');
+      currentStageId=stage; editingItemId=itemId;
+      const item = p.stages[stage].items.find(i=>i.id===itemId);
+      openItemModal(item);
+    };
+  });
+  document.querySelectorAll('[data-del-item]').forEach(b=>{
+    b.onclick = (e)=>{
+      e.stopPropagation();
+      const [stage,itemId] = b.dataset.delItem.split('|');
+      p.stages[stage].items = p.stages[stage].items.filter(i=>i.id!==itemId);
+      persistProject(p); renderDetail(); toast('Elemento eliminado','info');
+    };
+  });
+  document.querySelectorAll('[data-check]').forEach(c=>{
+    c.onchange = ()=>{
+      const t = p.checklist.find(x=>x.id===c.dataset.check);
+      t.done = c.checked; persistProject(p); renderDetail();
+    };
+  });
+  document.querySelectorAll('[data-delcheck]').forEach(b=>{
+    b.onclick = ()=>{
+      p.checklist = p.checklist.filter(x=>x.id!==b.dataset.delcheck);
+      persistProject(p); renderDetail();
+    };
+  });
+  document.getElementById('addCheckBtn').onclick = ()=>{
+    const v = document.getElementById('newCheck').value.trim();
+    if(!v) return;
+    p.checklist = p.checklist||[];
+    p.checklist.push({id:uid(),text:v,done:false});
+    persistProject(p); renderDetail();
+  };
+  document.getElementById('newCheck').addEventListener('keydown',e=>{
+    if(e.key==='Enter') document.getElementById('addCheckBtn').click();
+  });
+}
+
+function renderItem(it){
+  const stage = it._stage;
+  const typeName = ({text:'📝 Documento',note:'⚡ Nota',link:'🔗 Link',image:'🖼️ Imagen',file:'📎 Archivo'})[it.type];
+  const isDoc = (it.type==='text'||it.type==='note'||it.type==='image');
+  let body='';
+  if(it.type==='text') body = `<div class="preview">${escapeHtml(it.value)}</div><span class="open-hint">📄 Abrir tipo Word →</span>`;
+  else if(it.type==='note') body = `<div class="preview" style="background:rgba(245,158,11,.10);border-left:3px solid #f59e0b">⚡ ${escapeHtml(it.value)}</div><span class="open-hint">📄 Abrir tipo Word →</span>`;
+  else if(it.type==='link') body = `<a href="${escapeHtml(it.value)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escapeHtml(it.label||it.value)}</a>`;
+  else if(it.type==='image') body = `<img src="${it.value}" alt="img"/><span class="open-hint">🔍 Ver en grande →</span>`;
+  else if(it.type==='file') body = `<div class="file">📎 <a href="${it.value}" download="${escapeHtml(it.label||'archivo')}" onclick="event.stopPropagation()">${escapeHtml(it.label||'Descargar')}</a></div>`;
+  return `<div class="item ${isDoc?'openable':''}" ${isDoc?`data-open-doc="${stage}|${it.id}"`:''}>
+    <div class="type">${typeName}</div>
+    ${body}
+    <div class="actions">
+      <button class="iconbtn" data-edit-item="${stage}|${it.id}" title="Editar">✏️</button>
+      <button class="iconbtn" data-del-item="${stage}|${it.id}" title="Eliminar">🗑️</button>
+    </div>
+  </div>`;
+}
+
+/* ============ WORD-LIKE DOC VIEWER ============ */
+let docCurrent = null; // {projectId, stageId, itemId, editing}
+function openDocViewer(stageId, itemId){
+  const p = state.projects.find(x=>x.id===currentDetailId);
+  const item = p.stages[stageId].items.find(i=>i.id===itemId);
+  docCurrent = {projectId:p.id, stageId, itemId, editing:false};
+  renderDocViewer();
+  document.getElementById('docModal').classList.add('show');
+}
+function renderDocViewer(){
+  const p = state.projects.find(x=>x.id===docCurrent.projectId);
+  const stage = STAGES.find(s=>s.id===docCurrent.stageId);
+  const item = p.stages[docCurrent.stageId].items.find(i=>i.id===docCurrent.itemId);
+  document.getElementById('docCrumbs').innerHTML =
+    `<b>${escapeHtml(p.client)}</b> › ${stage.icon} ${stage.name} › ${({text:'Documento',note:'Nota',image:'Imagen'})[item.type]}`;
+  const paper = document.getElementById('docPaper');
+  const title = ({text:'Documento',note:'Nota Rápida',image:'Imagen'})[item.type];
+  const meta = `${stage.name} · Creado ${item.createdAt?fmtDate(item.createdAt):'—'}`;
+
+  if(item.type==='image'){
+    paper.innerHTML = `<h1>${title}</h1><div class="doc-meta">${meta}</div>
+      <img class="big" src="${item.value}" alt="imagen"/>
+      ${item.label?`<p style="margin-top:14px;color:#6b7280;font-style:italic;text-align:center">${escapeHtml(item.label)}</p>`:''}`;
+    document.getElementById('docEdit').style.display='none';
+    document.getElementById('docSave').style.display='none';
+  } else {
+    document.getElementById('docEdit').style.display='';
+    if(docCurrent.editing){
+      paper.innerHTML = `<h1>${title}</h1><div class="doc-meta">${meta}</div>
+        <textarea class="paper-edit" id="docTextarea" placeholder="Escribe aquí...">${escapeHtml(item.value)}</textarea>`;
+      document.getElementById('docSave').style.display='';
+      document.getElementById('docEdit').textContent = '👁️ Vista';
+      setTimeout(()=>document.getElementById('docTextarea').focus(),50);
+    } else {
+      paper.innerHTML = `<h1>${title}</h1><div class="doc-meta">${meta}</div>
+        <div class="paper-view">${escapeHtml(item.value)||'<em style="color:#9ca3af">Sin contenido. Click en Editar para agregar.</em>'}</div>`;
+      document.getElementById('docSave').style.display='none';
+      document.getElementById('docEdit').textContent = '✏️ Editar';
+    }
+  }
+}
+document.getElementById('docBack').onclick = ()=>{
+  document.getElementById('docModal').classList.remove('show');
+  docCurrent = null;
+};
+document.getElementById('docEdit').onclick = ()=>{
+  docCurrent.editing = !docCurrent.editing;
+  renderDocViewer();
+};
+document.getElementById('docSave').onclick = ()=>{
+  const p = state.projects.find(x=>x.id===docCurrent.projectId);
+  const item = p.stages[docCurrent.stageId].items.find(i=>i.id===docCurrent.itemId);
+  item.value = document.getElementById('docTextarea').value;
+  item.updatedAt = Date.now();
+  persistProject(p);
+  docCurrent.editing = false;
+  renderDocViewer();
+  renderDetail();
+  toast('Guardado');
+};
+document.getElementById('docDelete').onclick = ()=>{
+  if(!confirm('¿Eliminar este elemento?')) return;
+  const p = state.projects.find(x=>x.id===docCurrent.projectId);
+  p.stages[docCurrent.stageId].items = p.stages[docCurrent.stageId].items.filter(i=>i.id!==docCurrent.itemId);
+  persistProject(p);
+  document.getElementById('docModal').classList.remove('show');
+  renderDetail();
+  toast('Eliminado','info');
+};
+
+/* ============ ITEM MODAL ============ */
+const itemTabs = document.getElementById('itemTabs');
+itemTabs.querySelectorAll('button').forEach(b=>{
+  b.onclick = ()=>{
+    if(editingItemId) return; // no cambiar tipo al editar
+    itemTabs.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    currentItemType = b.dataset.t;
+    renderItemFields();
+  };
+});
+function openItemModal(existing=null){
+  currentItemType = existing?.type || 'text';
+  document.getElementById('itemModalTitle').textContent = existing ? 'Editar elemento' : 'Agregar a etapa';
+  itemTabs.querySelectorAll('button').forEach(x=>{
+    x.classList.toggle('active', x.dataset.t===currentItemType);
+    x.disabled = !!existing && x.dataset.t!==currentItemType;
+    x.style.opacity = (existing && x.dataset.t!==currentItemType) ? .4 : 1;
+  });
+  renderItemFields(existing);
+  openModal('itemModal');
+}
+function renderItemFields(existing=null){
+  const f = document.getElementById('itemFields');
+  const v = existing?.value || '';
+  const l = existing?.label || '';
+  if(currentItemType==='text'){
+    f.innerHTML = `<div class="field"><label>Contenido del documento</label>
+      <textarea id="itemValue" rows="8" placeholder="Escribe o pega aquí el contenido del cliente. Después podrás abrirlo a pantalla completa estilo Word.">${escapeHtml(v)}</textarea>
+      <div class="hint">💡 Tip: una vez creado, podrás abrir el documento a pantalla completa estilo Word.</div></div>`;
+  } else if(currentItemType==='note'){
+    f.innerHTML = `<div class="field"><label>Nota rápida</label>
+      <textarea id="itemValue" rows="5" placeholder="Recordatorio o idea rápida...">${escapeHtml(v)}</textarea></div>`;
+  } else if(currentItemType==='link'){
+    f.innerHTML = `
+      <div class="field"><label>Etiqueta (opcional)</label><input id="itemLabel" value="${escapeHtml(l)}" placeholder="Nombre del enlace"/></div>
+      <div class="field" style="margin-top:10px"><label>URL</label><input id="itemValue" value="${escapeHtml(v)}" placeholder="https://..."/></div>`;
+  } else if(currentItemType==='image'){
+    f.innerHTML = `
+      <div class="field"><label>Imagen</label><input id="itemFile" type="file" accept="image/*"/></div>
+      <div class="field" style="margin-top:10px"><label>Descripción (opcional)</label><input id="itemLabel" value="${escapeHtml(l)}" placeholder="Pie de imagen"/></div>
+      <div class="hint" style="margin-top:6px">Se guarda en tu navegador y en Firebase.</div>
+      ${v?`<img src="${v}" style="max-width:100%;margin-top:10px;border-radius:8px"/>`:''}
+      <input type="hidden" id="itemValue" value="${escapeHtml(v)}"/>`;
+    document.getElementById('itemFile').onchange = e=>{
+      const file = e.target.files[0]; if(!file) return;
+      if(file.size > 800*1024) toast('Imagen grande: puede tardar en sincronizar','info');
+      const reader = new FileReader();
+      reader.onload = ev=>{ document.getElementById('itemValue').value = ev.target.result; toast('Imagen cargada','info'); };
+      reader.readAsDataURL(file);
+    };
+  } else if(currentItemType==='file'){
+    f.innerHTML = `
+      <div class="field"><label>Nombre del archivo</label><input id="itemLabel" value="${escapeHtml(l)}" placeholder="documento.pdf"/></div>
+      <div class="field" style="margin-top:10px"><label>Archivo</label><input id="itemFile" type="file"/></div>
+      <div class="hint" style="margin-top:6px">Archivos pequeños recomendados (&lt;1MB).</div>
+      <input type="hidden" id="itemValue" value="${escapeHtml(v)}"/>`;
+    document.getElementById('itemFile').onchange = e=>{
+      const file = e.target.files[0]; if(!file) return;
+      if(!document.getElementById('itemLabel').value) document.getElementById('itemLabel').value = file.name;
+      const reader = new FileReader();
+      reader.onload = ev=>{ document.getElementById('itemValue').value = ev.target.result; toast('Archivo cargado','info'); };
+      reader.readAsDataURL(file);
+    };
+  }
+}
+document.getElementById('saveItemBtn').onclick = ()=>{
+  const p = state.projects.find(x=>x.id===currentDetailId);
+  if(!p) return;
+  const value = document.getElementById('itemValue')?.value || '';
+  const label = document.getElementById('itemLabel')?.value || '';
+  if(!value.trim()){ toast('Completa el contenido','error'); return; }
+  if(!p.stages[currentStageId]) p.stages[currentStageId]={items:[]};
+  if(editingItemId){
+    const it = p.stages[currentStageId].items.find(i=>i.id===editingItemId);
+    it.value = value; it.label = label; it.updatedAt = Date.now();
+    toast('Actualizado');
+  } else {
+    p.stages[currentStageId].items.push({id:uid(),type:currentItemType,value,label,createdAt:Date.now()});
+    logHist(`Agregado <b>${currentItemType}</b> a etapa <b>${STAGES.find(s=>s.id===currentStageId).name}</b> en <b>${escapeHtml(p.client)}</b>`);
+    toast('Elemento agregado');
+  }
+  persistProject(p); closeModal('itemModal'); renderDetail();
+};
+
+/* ============ DEMO ============ */
+if(!state.projects.length){
+  const demo = {
+    id: uid(),
+    client: 'María González', company: 'Studio Creativo',
+    type: 'Landing Page', price: 850000,
+    dueDate: new Date(Date.now()+1000*60*60*24*14).toISOString().slice(0,10),
+    status: 'progreso', priority: 'alta',
+    notes: 'Landing para lanzamiento de producto.',
+    createdAt: Date.now(),
+    paidInitial: true, paidFinal: false,
+    stages: Object.fromEntries(STAGES.map(s=>[s.id,{items:[]}])),
+    checklist:[
+      {id:uid(),text:'Reunión inicial con el cliente',done:true},
+      {id:uid(),text:'Recibir logos y assets',done:true},
+      {id:uid(),text:'Aprobar diseño',done:false},
+    ]
+  };
+  demo.stages.info.items.push({id:uid(),type:'text',value:'Cliente quiere estilo minimalista, paleta azul y blanco.\n\nPúblico objetivo: profesionales 25-45 años.\n\nSecciones requeridas:\n- Hero con CTA\n- Beneficios (3 columnas)\n- Testimonios\n- Formulario de contacto\n- Footer con redes sociales',createdAt:Date.now()});
+  demo.stages.content.items.push({id:uid(),type:'note',value:'Recibir copy final antes del viernes',createdAt:Date.now()});
+  state.projects.push(demo);
+  logHist('Bienvenido a WebFlow Manager 👋');
+  saveLocal();
+}
+
+render();
+</script>
+</body>
+</html>
