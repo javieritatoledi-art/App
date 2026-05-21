@@ -1,0 +1,6 @@
+{
+  "appId": "com.miapp.app",
+  "appName": "MiApp",
+  "webDir": ".",
+  "bundledWebRuntime": false
+}
